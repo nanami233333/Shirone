@@ -146,7 +146,7 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/markdown-abbreviations.md",
+				"docs/examples/posts/markdown-abbreviations.md",
 				"docs/markdown-extensions.md"
 			],
 			"tests": [
@@ -210,7 +210,7 @@
 					"viewport preloading or explicit activation: https://www.acfun.cn/player/{acid}"
 				]
 			},
-			"docs": ["src/content/posts/video.md"],
+			"docs": ["docs/examples/posts/video.md"],
 			"tests": [
 				"tests/plugins/markdown/leaf/acfun.test.mjs",
 				"tests/site/markdown-runtime.spec.ts"
@@ -273,7 +273,7 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/admonitions.md",
+				"docs/examples/posts/admonitions.md",
 				"docs/markdown-extensions.md"
 			],
 			"tests": [
@@ -335,7 +335,7 @@
 					"author-declared video source; preload accepts none or auto"
 				]
 			},
-			"docs": ["src/content/posts/video.md"],
+			"docs": ["docs/examples/posts/video.md"],
 			"tests": [
 				"tests/plugins/markdown/leaf/artplayer.test.mjs",
 				"tests/site/markdown-runtime.spec.ts"
@@ -389,7 +389,7 @@
 				]
 			},
 			"docs": [
-				"src/content/posts/audio-reader.md",
+				"docs/examples/posts/audio-reader.md",
 				".agents/skills/shirone-markdown-syntax/SKILL.md"
 			],
 			"tests": [
@@ -457,7 +457,7 @@
 					"viewport preloading or explicit activation: https://player.bilibili.com/player.html?bvid={bvid}&p={p}&high_quality=1&danmaku=0"
 				]
 			},
-			"docs": ["src/content/posts/video.md"],
+			"docs": ["docs/examples/posts/video.md"],
 			"tests": [
 				"tests/plugins/markdown/leaf/bilibili.test.mjs",
 				"tests/site/markdown-runtime.spec.ts"
@@ -530,7 +530,7 @@
 				"modules": ["src/utils/code-tree.ts"],
 				"network": []
 			},
-			"docs": ["src/content/posts/markdown-enhancements.md"],
+			"docs": ["docs/examples/posts/markdown-enhancements.md"],
 			"tests": [
 				"tests/plugins/markdown/containers/code-tree.test.mjs",
 				"tests/site/code-tree.spec.ts"
@@ -594,7 +594,7 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/collapse-panels.md",
+				"docs/examples/posts/collapse-panels.md",
 				"docs/markdown-extensions.md"
 			],
 			"tests": [
@@ -643,7 +643,7 @@
 				"modules": [],
 				"network": []
 			},
-			"docs": ["src/content/posts/content-annotations.md"],
+			"docs": ["docs/examples/posts/content-annotations.md"],
 			"tests": [
 				"tests/plugins/markdown/inline/content-annotations.test.mjs",
 				"tests/site/content-annotations.spec.ts"
@@ -735,7 +735,7 @@
 				"modules": ["src/utils/code-copy.ts", "src/utils/code-collapse.ts"],
 				"network": []
 			},
-			"docs": ["src/content/posts/expressive-code.md"],
+			"docs": ["docs/examples/posts/expressive-code.md"],
 			"tests": ["tests/site/post-encryption.spec.ts"],
 			"notes": ["元数据具体解析规则由 Expressive Code 及已注册插件定义。"]
 		},
@@ -787,7 +787,7 @@
 			"styles": ["src/styles/markdown/fields.css"],
 			"runtime": { "mode": "none", "modules": [], "network": [] },
 			"docs": [
-				"src/content/posts/markdown-fields.md",
+				"docs/examples/posts/markdown-fields.md",
 				"docs/markdown-extensions.md"
 			],
 			"tests": ["tests/plugins/markdown/containers/fields.test.mjs"],
@@ -845,7 +845,7 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/markdown-enhancements.md",
+				"docs/examples/posts/markdown-enhancements.md",
 				"docs/markdown-extensions.md"
 			],
 			"tests": [
@@ -892,8 +892,8 @@
 				]
 			},
 			"docs": [
-				"src/content/posts/markdown-extended.md",
-				"src/content/posts/guide/index.md"
+				"docs/examples/posts/markdown-extended.md",
+				"docs/examples/posts/guide/index.md"
 			],
 			"tests": [
 				"tests/plugins/markdown/leaf/github-card.test.mjs",
@@ -946,7 +946,7 @@
 				"modules": ["src/utils/fancybox-handler.ts"],
 				"network": ["author-declared image URLs only"]
 			},
-			"docs": ["src/content/posts/image-grid-demo/index.md"],
+			"docs": ["docs/examples/posts/image-grid-demo/index.md"],
 			"tests": [
 				"tests/plugins/image-grid.test.mjs",
 				"tests/site/image-grid.spec.ts"
@@ -989,7 +989,7 @@
 				"modules": [],
 				"network": ["author-declared image URLs only"]
 			},
-			"docs": ["src/content/posts/spoilers.md", "docs/markdown-extensions.md"],
+			"docs": ["docs/examples/posts/spoilers.md", "docs/markdown-extensions.md"],
 			"tests": ["tests/plugins/rehype-markdown-images.test.mjs"],
 			"notes": ["非法或越界宽度令牌保留在 alt，不静默改写。"]
 		},
@@ -1040,7 +1040,7 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/markdown-includes.md",
+				"docs/examples/posts/markdown-includes.md",
 				"docs/markdown-extensions.md"
 			],
 			"tests": ["tests/plugins/markdown/inline/includes.test.mjs"],
@@ -1089,7 +1089,7 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/marker-highlights.md",
+				"docs/examples/posts/marker-highlights.md",
 				"docs/markdown-extensions.md"
 			],
 			"tests": [
@@ -1130,8 +1130,8 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/guide/index.md",
-				"src/content/posts/markdown.md"
+				"docs/examples/posts/guide/index.md",
+				"docs/examples/posts/markdown.md"
 			],
 			"tests": [
 				"tests/plugins/markdown/katex-version.test.mjs",
@@ -1164,8 +1164,8 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/markdown-mermaid.md",
-				"src/content/posts/guide/index.md"
+				"docs/examples/posts/markdown-mermaid.md",
+				"docs/examples/posts/guide/index.md"
 			],
 			"tests": ["tests/site/mermaid.spec.ts"],
 			"notes": [
@@ -1218,7 +1218,7 @@
 				"network": []
 			},
 			"docs": [
-				"src/content/posts/option-groups.md",
+				"docs/examples/posts/option-groups.md",
 				"docs/markdown-extensions.md"
 			],
 			"tests": [
@@ -1254,7 +1254,7 @@
 				"modules": ["src/utils/spoilers.ts"],
 				"network": []
 			},
-			"docs": ["src/content/posts/markdown-extended.md"],
+			"docs": ["docs/examples/posts/markdown-extended.md"],
 			"tests": [
 				"tests/plugins/markdown/inline/spoilers.test.mjs",
 				"tests/site/spoilers.spec.ts"
@@ -1302,7 +1302,7 @@
 				"modules": [],
 				"network": []
 			},
-			"docs": ["src/content/posts/steps.md"],
+			"docs": ["docs/examples/posts/steps.md"],
 			"tests": [
 				"tests/plugins/markdown/containers/steps.test.mjs",
 				"tests/site/steps.spec.ts"
@@ -1361,7 +1361,7 @@
 					"viewport preloading or explicit activation: https://www.youtube-nocookie.com/embed/{id}?rel=0&modestbranding=1"
 				]
 			},
-			"docs": ["src/content/posts/video.md"],
+			"docs": ["docs/examples/posts/video.md"],
 			"tests": [
 				"tests/plugins/markdown/leaf/youtube.test.mjs",
 				"tests/site/markdown-runtime.spec.ts"

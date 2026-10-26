@@ -45,6 +45,8 @@
 		"fonts:check": "node scripts/fonts/check-fonts.mjs",
 		"fonts:subset": "node scripts/fonts/subset-fonts.mjs",
 		"build": "node scripts/content/sync.mjs && astro build && npx pagefind --site dist && node scripts/fonts/check-fonts.mjs",
+		"build:pages": "pnpm build && pnpm check:static-deploy",
+		"check:static-deploy": "node scripts/check-static-deploy.mjs",
 		"preview": "astro preview",
 		"lighthouse:collect": "lhci collect --config=lighthouserc.cjs",
 		"lighthouse:assert": "lhci assert --config=lighthouserc.cjs",
