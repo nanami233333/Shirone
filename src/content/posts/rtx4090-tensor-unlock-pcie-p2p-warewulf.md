@@ -6,6 +6,8 @@ tags: [RTX 4090, NVIDIA, CUDA, P2P, NCCL, Warewulf, HPC, Linux]
 category: "HPC / GPU"
 lang: "zh-CN"
 draft: false
+pinned: true
+image: "/images/posts/rtx4090-unlock/cover.svg"
 comment: true
 ---
 
@@ -22,6 +24,15 @@ comment: true
 - 测试边界：这不是跨服务器八卡 NCCL 测试，也没有完成长期高负载稳定性认证。
 
 **最容易误解的地方**：特定 MMA 指令 2 倍，不等于 GEMM 或 AI 训练整体 2 倍；`topo -p2p` 显示 OK，也不等于 NCCL 一定选 P2P，更不代表全局应用必然加速。
+
+
+![双节点 GPU、Tensor 解锁与 PCIe P2P 组合架构](/images/posts/rtx4090-unlock/cover.svg)
+
+与“复制命令然后宣布成功”不同，这次实验围绕三个实际问题展开：**消费级 Ada 显卡究竟限制了什么、PCIe P2P 卡在哪里、为什么有些 NCCL 测试打开 P2P 后反而更慢？** 我们逐一以固件初始化日志、PCIe 资源分配、CUDA 数据校验与 NCCL 重复实验回答。
+
+:::note[如何阅读]
+本文的配置和命令是经过脱敏的实验复盘，不是任何主板或驱动版本的通用“一键脚本”。先看机制与风险，再结合自己的 PCIe 拓扑、GSP/驱动版本和启动链修改。
+:::
 
 ## 1. 实验环境与双解锁机制
 
@@ -55,6 +66,20 @@ comment: true
 RTX 4090 没有 NVLink。原始驱动即使枚举了四张卡，`nvidia-smi topo -p2p r/w` 仍可能全部显示 `GNS`。P2P 驱动补丁修改 NVIDIA Open 模块的 GPU peer mapping 支持；参考 [作者关于 4090 48GB、动态 BAR1 的技术文章](https://duanyll.com/2026/7/13/4090-48G-P2P/)。
 
 **BAR1 是 PCIe MMIO 可映射窗口，不是额外显存**。GPU 自身报告 ReBAR 最高支持 32GB，并不代表 BIOS 当时实际给它分配了 32GB。本次初始 `current size` 只有 256MB。
+
+### 1.3 从 CPU 到 GPU：为什么 NUMA 位置决定通信上限？
+
+消费级 GPU 之间的 P2P 并不是虚拟的“GPU 私有高速总线”。它仍需走 GPU PCIe Endpoint → Root Port/PCIe Bridge → 对端 GPU 的物理路径。如果两卡落在不同 CPU Socket 的 Root Complex 后面，数据还会涉及处理器之间的互连；启用 P2P 能减少主机内存中转，但不能消除硬件跳数。
+
+![双路 NUMA 下四张 GPU 的拓扑示意](/images/posts/rtx4090-unlock/topology.svg)
+
+在我们的机器上，GPU0/1 和 GPU2/3 是两个相对接近的组合；GPU0→GPU2 属于跨 NUMA 通路。这一硬件结构解释了后面为什么同 NUMA 单向复制达到约 21 GiB/s，而部分跨 NUMA 方向约为 16–17 GiB/s。这里的图是**拓扑示意而非真实机器的 PCI BDF/布线图**。
+
+### 1.4 为什么必须由两个独立机制组合？
+
+Tensor Unlock 发生在 NVIDIA 驱动加载**之前**，目的是更改特定运算速率配置；P2P 补丁则是 NVIDIA Open Kernel Modules 层的 peer mapping 能力。二者在不同层面工作，既不能互相代替，也不意味着理论加速比可以相乘。
+
+这也是我们先用一张卡验证 Tensor，再在克隆镜像中升级 NVIDIA 615 和 P2P、最后检查 GPU 间 NCCL 的原因。按阶段验收能把“启动失败”“GPU 数值错误”“通信错误”定位到不同层。
 
 ## 2. 通过 Warewulf 部署 Tensor Unlock
 
@@ -151,6 +176,22 @@ nvidia-peermem.ko
 
 ## 4. BIOS / BAR1 / IOMMU 配置
 
+![BAR1：映射窗口与物理显存的区别](/images/posts/rtx4090-unlock/bar1.svg)
+
+### 4.1 BAR1 扩容不是显存扩容
+
+CPU 可通过 PCIe MMIO 窗口访问 GPU 的部分设备/显存地址空间。BAR1 资源的“size”表示主机为这个 PCIe BAR 分配的**地址窗口容量**，而不是 GPU 搭载了多少显存。大 BAR1 对静态映射覆盖整卡显存非常关键，但它也占用平台的 PCIe MMIO 地址空间；四卡同时选择 32GiB BAR1，理论上需要约 128GiB 的窗口地址资源（还未计入其他 BAR）。
+
+动态 BAR1 映射并非简单“开了 ReBAR 就变成动态”：它还依赖相应的驱动映射策略。我们这里的卡是**标准 24GB**，而原始研究重点包括 **48GB 改装卡**。24GB 容量小于已分配的 32GiB 窗口，因此不能仅凭本次结果证明 48GB 场景下的动态窗口回收算法已被充分验证。本文只声称本次 24GB 环境的 peer copy / NCCL 结果。
+
+### 4.2 从能力位到实际映射有三层检查
+
+1. §lspci -vv§ 的 Resizable BAR **supported sizes**：GPU 宣称支持哪些窗口。
+2. §lspci -vv§ 的 **current size** 与 §nvidia-smi -q§ 的 BAR1 Total：平台实际上分配了多少。
+3. §nvidia-smi topo -p2p§、CUDA Peer Access 与数据一致性：驱动和上层运行时是否真正可用。
+
+即便第三层返回 OK，也仍需要验证集合通信的数值和性能。
+
 两台机器的 GPU 都报告 `Physical Resizable BAR` 支持 BAR1 最大 **32GB**；但刚开始 `lspci -vv` 的 **current size** 只有 **256MB**。
 
 维护窗口使用带外控制台检查主板 BIOS/UEFI：
@@ -180,6 +221,10 @@ iommu: Default domain type: Passthrough (set via kernel command line)
 
 ### MMA 指令吞吐（best TF/s）
 
+![Tensor Core MMA：原始卡与解锁卡对照](/images/posts/rtx4090-unlock/mma.svg)
+
+指令层基准特意保留未变化的 INT8、FP16/FP16 和普通 FP32 FFMA 作为**负对照**。如果所有模式都同幅度上升，就需要怀疑是频率、功耗或测试方法而不只是某个 Tensor 模式的限制被解除。
+
 | 模式 | 原始/对照 | 解锁 | 加速 |
 | --- | ---: | ---: | ---: |
 | FP16/FP32 | 161.8 | **323.6** | **2.00×** |
@@ -192,6 +237,10 @@ iommu: Default domain type: Passthrough (set via kernel command line)
 **不是所有 Tensor 模式、所有精度都翻倍**。
 
 ### cuBLAS GEMM 中位吞吐（TF/s）
+
+![cuBLAS GEMM 中位吞吐对比](/images/posts/rtx4090-unlock/gemm.svg)
+
+GEMM 的实际吞吐包含 Kernel 实现、访存、矩阵维度与调度成本。特别是 BF16/FP32 4096² 只改善约 0.6%，提示这类任务可能不是被解锁的指令速率控制。
 
 | 算例 | 原始/对照 | 解锁 | 改善 |
 | --- | ---: | ---: | ---: |
@@ -269,6 +318,12 @@ Channel ... via P2P/direct pointer
 
 ### 7.3 三轮复测：AUTO 比强制 PHB / SYS 更快
 
+![四卡 NCCL AllReduce：AUTO、PHB、SYS 的重复实验](/images/posts/rtx4090-unlock/nccl.svg)
+
+为何不把双卡的 21% 改善直接推广到四卡？因为 AllReduce 不是一次独立 Peer Copy，而是涉及同步、分块、通信环/树与不同拓扑边的集合操作；最慢链路、通道选择和 CPU Socket 间路径会影响总吞吐。强制扩大 P2P 允许距离，可能令 NCCL 不再采用其默认认为更好的组合。
+
+因此我们固定消息大小与迭代数量，对 AUTO、PHB、SYS 各重复 3 次，并以所有轮次的平均 §busbw§ 讨论性能，而不是挑最快的一条数据。
+
 32–256MiB 单机四卡 AllReduce，每策略 3 次，平均 `busbw`（GB/s）：
 
 | NCCL 策略 | compute-a | compute-b |
@@ -288,6 +343,21 @@ unset NCCL_ALGO
 unset NCCL_PROTO
 ```
 
+### 7.4 对性能指标的解释
+
+NCCL 的 §algbw§ 是算法层有效带宽；§busbw§ 是依据通信原语和卡数折算的总线带宽，**不能直接与单向 CUDA Peer Copy 的 GiB/s 作数值等价比较**。另外本次 §GB/s§ 为 NCCL 的十进制单位，Peer Copy 的 §GiB/s§ 为二进制单位，单位差异也是比较时必须说明的。
+
+实验证据分四级：
+
+| 证据 | 能证明什么 | 不能证明什么 |
+| --- | --- | --- |
+| §gpu_unlock: unlocked§ | 固件阶段报告解锁 | 所有应用都加速 |
+| §topo -p2p OK§ | 运行时宣称可访问 | 数据必定正确 |
+| 24/24 Peer Copy PASS | 指定大小/方向数据正确 | NCCL 必选此路径 |
+| §via P2P/direct pointer§ + AllReduce | NCCL 此次使用直接指针、数值通过 | 全部模型训练都提升 |
+
+这四级证据也是本文最希望提供的一套评估方法。
+
 ## 8. 这次最有用的踩坑清单
 
 1. **Warewulf bind 的 `not a directory`：** 目的路径可能在挂载失败时留下 0 字节普通文件。先 `stat` 确认、清理该特定空文件，再创建目录；不要盲目递归删除。
@@ -299,6 +369,12 @@ unset NCCL_PROTO
 7. **INFO 日志污染性能输出：** NCCL `INFO` 可能与性能表格输出交错；性能跑分用 `WARN`，路径诊断单独保留 `INFO` 日志。
 
 ## 9. 运维结论和下一步
+
+### 9.1 可回滚比“一次成功”重要
+
+维护期应先通过 Slurm drain 保护作业，保留原始 NVIDIA 610 镜像、仅 Tensor 解锁的已知可用镜像，以及 615+P2P 独立测试镜像。任何 boot 参数（尤其 IOMMU、GPU BDF）须在节点级设置并检查实际 §/proc/cmdline§；不要改共享 GPU profile 后让另一台不相关节点意外继承。
+
+除冷启动恢复，还应把补丁源码提交哈希、目标内核 ABI、最终 §modinfo filename/version/vermagic§、NCCL 测试日志等收进可追踪的维护记录。
 
 这次已实证完成：两个节点的 Tensor 解锁、32GiB BAR1、24/24 CUDA P2P 有向传输校验、NCCL 直接指针路径验证及短时 AllReduce 数值正确性。**双卡 P2P 收益明显，四卡应保留 NCCL AUTO。**
 
