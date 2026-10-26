@@ -65,7 +65,7 @@ hideHomeContent: true   # 加密内容在首页隐藏(默认 true)
 
 ## 现成范例(demo 文章即文档)
 
-`src/content/posts/` 下的示例文章同时是语法文档,写作前可参考:`markdown.md`(基础)、`markdown-extended.md`(扩展语法)、`admonitions.md`、`spoilers.md`、`steps.md`、`option-groups.md`、`collapse-panels.md`、`marker-highlights.md`、`markdown-abbreviations.md`、`markdown-mermaid.md`、`expressive-code.md`、`encrypted-demo.md`(加密)、`video.md`、`image-grid-demo/`(图片画廊)、`markdown-includes.md`(文件包含)。
+`docs/examples/posts/` 下的示例文章同时是语法文档,写作前可参考:`markdown.md`(基础)、`markdown-extended.md`(扩展语法)、`admonitions.md`、`spoilers.md`、`steps.md`、`option-groups.md`、`collapse-panels.md`、`marker-highlights.md`、`markdown-abbreviations.md`、`markdown-mermaid.md`、`expressive-code.md`、`encrypted-demo.md`(加密)、`video.md`、`image-grid-demo/`(图片画廊)、`markdown-includes.md`(文件包含)。
 
 ## 注意事项
 
@@ -77,8 +77,8 @@ hideHomeContent: true   # 加密内容在首页隐藏(默认 true)
 
 - `src/content.config.ts` — posts/moments 的 zod schema 权威定义
 - `scripts/new-post.js` — `pnpm new-post` 脚手架行为
-- `src/content/posts/` — 示例文章(语法活文档)
-- `src/content/moments/` — 动态示例
+- `docs/examples/posts/` — 示例文章(不发布到站点)
+- `src/content/moments/` — 博主动态
 
 ## npm 包模式内容路径
 
