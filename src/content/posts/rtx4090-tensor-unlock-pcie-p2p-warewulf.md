@@ -186,9 +186,9 @@ CPU 可通过 PCIe MMIO 窗口访问 GPU 的部分设备/显存地址空间。BA
 
 ### 4.2 从能力位到实际映射有三层检查
 
-1. §lspci -vv§ 的 Resizable BAR **supported sizes**：GPU 宣称支持哪些窗口。
-2. §lspci -vv§ 的 **current size** 与 §nvidia-smi -q§ 的 BAR1 Total：平台实际上分配了多少。
-3. §nvidia-smi topo -p2p§、CUDA Peer Access 与数据一致性：驱动和上层运行时是否真正可用。
+1. `lspci -vv` 的 Resizable BAR **supported sizes**：GPU 宣称支持哪些窗口。
+2. `lspci -vv` 的 **current size** 与 `nvidia-smi -q` 的 BAR1 Total：平台实际上分配了多少。
+3. `nvidia-smi topo -p2p`、CUDA Peer Access 与数据一致性：驱动和上层运行时是否真正可用。
 
 即便第三层返回 OK，也仍需要验证集合通信的数值和性能。
 
@@ -322,7 +322,7 @@ Channel ... via P2P/direct pointer
 
 为何不把双卡的 21% 改善直接推广到四卡？因为 AllReduce 不是一次独立 Peer Copy，而是涉及同步、分块、通信环/树与不同拓扑边的集合操作；最慢链路、通道选择和 CPU Socket 间路径会影响总吞吐。强制扩大 P2P 允许距离，可能令 NCCL 不再采用其默认认为更好的组合。
 
-因此我们固定消息大小与迭代数量，对 AUTO、PHB、SYS 各重复 3 次，并以所有轮次的平均 §busbw§ 讨论性能，而不是挑最快的一条数据。
+因此我们固定消息大小与迭代数量，对 AUTO、PHB、SYS 各重复 3 次，并以所有轮次的平均 `busbw` 讨论性能，而不是挑最快的一条数据。
 
 32–256MiB 单机四卡 AllReduce，每策略 3 次，平均 `busbw`（GB/s）：
 
@@ -345,16 +345,16 @@ unset NCCL_PROTO
 
 ### 7.4 对性能指标的解释
 
-NCCL 的 §algbw§ 是算法层有效带宽；§busbw§ 是依据通信原语和卡数折算的总线带宽，**不能直接与单向 CUDA Peer Copy 的 GiB/s 作数值等价比较**。另外本次 §GB/s§ 为 NCCL 的十进制单位，Peer Copy 的 §GiB/s§ 为二进制单位，单位差异也是比较时必须说明的。
+NCCL 的 `algbw` 是算法层有效带宽；`busbw` 是依据通信原语和卡数折算的总线带宽，**不能直接与单向 CUDA Peer Copy 的 GiB/s 作数值等价比较**。另外本次 `GB/s` 为 NCCL 的十进制单位，Peer Copy 的 `GiB/s` 为二进制单位，单位差异也是比较时必须说明的。
 
 实验证据分四级：
 
 | 证据 | 能证明什么 | 不能证明什么 |
 | --- | --- | --- |
-| §gpu_unlock: unlocked§ | 固件阶段报告解锁 | 所有应用都加速 |
-| §topo -p2p OK§ | 运行时宣称可访问 | 数据必定正确 |
+| `gpu_unlock: unlocked` | 固件阶段报告解锁 | 所有应用都加速 |
+| `topo -p2p OK` | 运行时宣称可访问 | 数据必定正确 |
 | 24/24 Peer Copy PASS | 指定大小/方向数据正确 | NCCL 必选此路径 |
-| §via P2P/direct pointer§ + AllReduce | NCCL 此次使用直接指针、数值通过 | 全部模型训练都提升 |
+| `via P2P/direct pointer` + AllReduce | NCCL 此次使用直接指针、数值通过 | 全部模型训练都提升 |
 
 这四级证据也是本文最希望提供的一套评估方法。
 
@@ -372,9 +372,9 @@ NCCL 的 §algbw§ 是算法层有效带宽；§busbw§ 是依据通信原语和
 
 ### 9.1 可回滚比“一次成功”重要
 
-维护期应先通过 Slurm drain 保护作业，保留原始 NVIDIA 610 镜像、仅 Tensor 解锁的已知可用镜像，以及 615+P2P 独立测试镜像。任何 boot 参数（尤其 IOMMU、GPU BDF）须在节点级设置并检查实际 §/proc/cmdline§；不要改共享 GPU profile 后让另一台不相关节点意外继承。
+维护期应先通过 Slurm drain 保护作业，保留原始 NVIDIA 610 镜像、仅 Tensor 解锁的已知可用镜像，以及 615+P2P 独立测试镜像。任何 boot 参数（尤其 IOMMU、GPU BDF）须在节点级设置并检查实际 `/proc/cmdline`；不要改共享 GPU profile 后让另一台不相关节点意外继承。
 
-除冷启动恢复，还应把补丁源码提交哈希、目标内核 ABI、最终 §modinfo filename/version/vermagic§、NCCL 测试日志等收进可追踪的维护记录。
+除冷启动恢复，还应把补丁源码提交哈希、目标内核 ABI、最终 `modinfo filename/version/vermagic`、NCCL 测试日志等收进可追踪的维护记录。
 
 这次已实证完成：两个节点的 Tensor 解锁、32GiB BAR1、24/24 CUDA P2P 有向传输校验、NCCL 直接指针路径验证及短时 AllReduce 数值正确性。**双卡 P2P 收益明显，四卡应保留 NCCL AUTO。**
 
